@@ -6,13 +6,12 @@
 #include "btn.h"
 #include "led.h"
 
-#define RELAY 32
-
 //----------------------------
 // FORWARD DECLARATIONS
 //----------------------------
 void initWiFi();
 bool connectWiFi();
+void readSerial();
 
 //----------------------------
 // GLOBALS
@@ -21,6 +20,7 @@ WiFiMulti wifiMulti;
 
 Toggl toggl;
 bool timerActive = false;
+String curTimerId = "null";
 String lastTimerId = "";
 
 //----------------------------
@@ -32,7 +32,6 @@ void setup() {
 
     Serial.println("\n################################\n\n");
     Serial.println("Booting...\n");
-    pinMode(RELAY, OUTPUT);
     delay(100);
 
     initWiFi();
@@ -44,10 +43,9 @@ void setup() {
     initBtn();
     delay(100);
 
-    toggl.setAuth(TOGGL_TOKEN);
+    toggl.init(TOGGL_TOKEN);
     delay(100);
     Serial.printf("- Toogle Name: %s\n", toggl.getFullName().c_str());
-    Serial.printf("- Toggle TZ: %s\n", toggl.getTimezone().c_str());
 
     Serial.printf("Setup done after %d seconds.\n", millis() / 1000);
     Serial.println("\n################################\n\n");
@@ -58,45 +56,26 @@ void setup() {
 void toggleState() {
     if (timerActive) {
         Serial.println("- Timer is currently active, will stop.");
-        String curId = toggl.getCurrentTimerId();
-        toggl.stopTimeEntry(curId);
+        toggl.stopTimeEntry(curTimerId);
     } else {
-        Serial.println("- Timer is currently inactive, will start.");
-        toggl.startTimeEntry();
-    }
-}
-
-void readSerial() {
-    while (Serial.available() > 0)  // Only run when there is data available
-    {
-        String input = Serial.readString();
-        // Remove trailing LF
-        input.trim();
-        Serial.printf("Received Serial: \"%s\"\n", input);
-        if (input == "start") {
-            Serial.printf("- Known command: \"%s\", start new entry.\n", input);
-            toggl.startTimeEntry();
-        } else if (input == "stop") {
-            Serial.printf("- Known command: \"%s\", end current entry.\n", input);
-            String curId = toggl.getCurrentTimerId();
-            toggl.stopTimeEntry(curId);
-        } else if (input == "resume") {
-            Serial.printf("- Known command: \"%s\", continue last entry.\n", input);
-            toggl.resumeTimeEntry(lastTimerId);
-        } else if (input == "toggle") {
-            if (timerActive) {
-                Serial.printf("- Known command: \"%s\", timer is currently active, will stop.\n", input);
-                String curId = toggl.getCurrentTimerId();
-                toggl.stopTimeEntry(curId);
-            } else {
-                Serial.printf("- Known command: \"%s\", timer is currently inactive, will start.\n", input);
-                toggl.startTimeEntry();
+        if(TOGGL_RESUME_LAST){
+            if(lastTimerId!=""){
+                Serial.println("- Timer is currently inactive, will resume last task.");
+                toggl.resumeTimeEntry(lastTimerId);
+            }else{
+                Serial.println("- Timer is currently inactive, but no known id in memory, will start new task.");
+                //TODO: search for latest Timer Id
+                //if found, resume
+                //if not, start new default
             }
-        } else {
-            Serial.printf("- Unknown command: \"%s\", do nothing.\n", input);
+        }else{
+            Serial.println("- Timer is currently inactive, will start.");
+            toggl.startTimeEntry();
         }
     }
 }
+
+
 //----------------------------
 // LOOP
 //----------------------------
@@ -105,15 +84,16 @@ void loop() {
     if (!connectWiFi())
         return;
 
-    bool curTimeActive = toggl.isTimerActive();
+    curTimerId= toggl.getCurrentTimerId();
+    bool curTimeActive = (curTimerId!="null");
+
     if (timerActive != curTimeActive) {
         timerActive = curTimeActive;
         Serial.printf("Remote time switched to: %s \n", timerActive ? "active" : "inactive");
-        //digitalWrite(RELAY, timerActive ? HIGH : LOW);
         if (timerActive) {
-            lastTimerId = toggl.getCurrentTimerId();
-            Serial.printf("- Current Timer-ID: %s \n", lastTimerId);
+            Serial.printf("- Current Timer-ID: %s \n", curTimerId);
             setLed(color::RED);
+            lastTimerId=curTimerId;
         } else {
             ledOff();
         }
@@ -122,7 +102,7 @@ void loop() {
 
     if (btnWasPressed()) {
       Serial.println("Button was pressed!");
-      setLed(color::GREEN);
+      //setLed(color::GREEN);//is done in btn now, so that there is no delay
       toggleState();
     }
 
@@ -174,4 +154,40 @@ bool connectWiFi() {
         Serial.println(WiFi.SSID());
     }
     return true;
+}
+
+
+//----------------------------
+// SERIAL
+//----------------------------
+void readSerial() {
+    while (Serial.available() > 0)  // Only run when there is data available
+    {
+        String input = Serial.readString();
+        // Remove trailing LF
+        input.trim();
+        Serial.printf("Received Serial: \"%s\"\n", input);
+        if (input == "start") {
+            Serial.printf("- Known command: \"%s\", start new entry.\n", input);
+            toggl.startTimeEntry();
+        } else if (input == "stop") {
+            Serial.printf("- Known command: \"%s\", end current entry.\n", input);
+            String curId = toggl.getCurrentTimerId();
+            toggl.stopTimeEntry(curId);
+        } else if (input == "resume") {
+            Serial.printf("- Known command: \"%s\", continue last entry.\n", input);
+            toggl.resumeTimeEntry(curTimerId);
+        } else if (input == "toggle") {
+            if (timerActive) {
+                Serial.printf("- Known command: \"%s\", timer is currently active, will stop.\n", input);
+                String curId = toggl.getCurrentTimerId();
+                toggl.stopTimeEntry(curId);
+            } else {
+                Serial.printf("- Known command: \"%s\", timer is currently inactive, will start.\n", input);
+                toggl.startTimeEntry();
+            }
+        } else {
+            Serial.printf("- Unknown command: \"%s\", do nothing.\n", input);
+        }
+    }
 }

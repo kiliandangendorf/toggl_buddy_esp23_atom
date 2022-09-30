@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <Base64.h>
+#include <ESPDateTime.h>
 #include <HTTPClient.h>
 
 #include <sstream>
@@ -69,54 +70,9 @@ class Toggl {
     }
 
     //----------------------------
-    // MISC
-    //----------------------------
-    const String getWorkSpace() {
-        if ((WiFi.status() == WL_CONNECTED)) {
-            String Output{};
-            uint16_t HTTP_Code{};
-
-            HTTPClient https;
-            https.begin(String(BaseUrl) + "/workspaces", root_ca);
-            https.addHeader("Authorization", AuthorizationKey, true);
-
-            HTTP_Code = https.GET();
-
-            if (HTTP_Code >= 200 && HTTP_Code <= 226) {
-                DynamicJsonDocument doc(1024);
-
-                StaticJsonDocument<50> filter;
-                filter[0]["id"] = true;
-                filter[0]["name"] = true;
-
-                deserializeJson(doc, https.getString(), DeserializationOption::Filter(filter));
-
-                JsonArray arr = doc.as<JsonArray>();
-
-                for (JsonVariant value : arr) {
-                    const int TmpID{value["id"]};
-                    Output += TmpID;
-                    Output += "\n";
-                    String TmpName = value["name"];
-                    Output += TmpName + "\n" + "\n";
-                }
-                doc.garbageCollect();
-                filter.garbageCollect();
-            }
-
-            else {
-                Output = ("Error: " + String(HTTP_Code));
-            }
-
-            https.end();
-            return Output;
-        }
-    }
-
-    //----------------------------
     // TIMER
     //----------------------------
-    const String startTimeEntry(const char* description = "Something", const char* tags = "", const int pid = 0, const char* createdWith = "esp32;)") {
+    const String startTimeEntry(const char* description = TOGGL_DEFAULT_DESCRIPTION, const char* tags = TOGGL_DEFAULT_TAG, const int pid = TOGGL_DEFAULT_PID, const char* createdWith = TOGGL_DEFAULT_CREATED_WITH) {
         String payload;
 
         HTTPClient https;
@@ -137,7 +93,7 @@ class Toggl {
         doc.garbageCollect();
         doc.clear();
 
-        //TODO: ???
+        // TODO: ???
         deserializeJson(doc, https.getString());
 
         String TimeID = doc["data"]["id"];
@@ -150,30 +106,36 @@ class Toggl {
     }
 
     const String resumeTimeEntry(String entryId) {
-        String newTimerId = "";
-
         HTTPClient https;
-        https.begin("https://api.track.toggl.com/api/v8/time_entries/" + entryId, root_ca);
+        Serial.printf("- Retrieving info from last entry: \"%s\".\n", entryId.c_str());
+        https.begin(String(BaseUrl) + "/time_entries/" + entryId, root_ca);
         https.addHeader("Authorization", AuthorizationKey);
+
+        String description = TOGGL_DEFAULT_DESCRIPTION;
+        String tags = TOGGL_DEFAULT_TAG;
+        int pid = TOGGL_DEFAULT_PID;
+
+        String newId = "";
 
         int httpCode = https.GET();
 
         if (httpCode >= 200 && httpCode <= 226) {
-            DynamicJsonDocument doc(2 * JSON_OBJECT_SIZE(1) + 60);
+            StaticJsonDocument<512> doc;
             deserializeJson(doc, https.getString());
-            const char* description = doc["data"]["description"];
 
-            const char* tags = doc["data"]["tags"];
-            const int pid = doc["data"]["pid"];
+            description = doc["data"]["description"].as<String>();
+
+            tags = doc["data"]["tags"].as<String>();
+            pid = doc["data"]["pid"];
+
             Serial.println("- Retrieved last entry with:");
-            Serial.printf("  - description: \"%s\", pid: \"%d\", tags: \"%s\", ", description, pid, tags);
+            Serial.printf("  - description: \"%s\", pid: \"%d\", tags: \"%s\".\n", description.c_str(), pid, tags.c_str());
 
-            newTimerId = startTimeEntry(description, tags, pid);
             doc.garbageCollect();
             doc.clear();
         }
         https.end();
-        return newTimerId;
+        return startTimeEntry(description.c_str(), tags.c_str(), pid);
     }
 
     const bool stopTimeEntry(String const& ID) {
@@ -187,40 +149,7 @@ class Toggl {
 
         return (httpCode >= 200 && httpCode <= 226);
     }
-    const String CreateTimeEntry(String const& Description, String const& Tags, int const& Duration, String const& Start, int const& PID, String const& CreatedWith) {
-        if ((WiFi.status() == WL_CONNECTED)) {
-            String payload;
 
-            HTTPClient https;
-            https.begin(String(BaseUrl) + "/time_entries", root_ca);
-            https.addHeader("Authorization", AuthorizationKey, true);
-            https.addHeader("Content-Type", " application/json");
-
-            DynamicJsonDocument doc(JSON_ARRAY_SIZE(1) + JSON_OBJECT_SIZE(6) + 50);
-
-            doc["time_entry"]["description"] = Description;
-            doc["time_entry"]["tags"] = Tags;
-            doc["time_entry"]["duration"] = Duration;
-            doc["time_entry"]["start"] = Start;
-            doc["time_entry"]["pid"] = PID;
-            doc["time_entry"]["created_with"] = CreatedWith;
-
-            serializeJson(doc, payload);
-
-            https.POST(payload);
-            doc.clear();
-
-            deserializeJson(doc, https.getString());
-
-            String TimeID = doc["data"]["id"];
-
-            doc.clear();
-            doc.garbageCollect();
-            https.end();
-
-            return TimeID;
-        }
-    }
     const String getCurrentTimerId() {
         return getCurrentTimerData("id");
     }
@@ -229,10 +158,48 @@ class Toggl {
         return wid != "null";
     }
 
+    const String getLatestTimeEntryId() {
+        //TODO: Coninue here ;)
+        time_t dateNow=DateTime.now();
+        
+
+        String startDateStr = "start_date=2013-03-10T15%3A42%3A46%2B02%3A00&";
+        HTTPClient https;
+
+        String entryId = "";
+        bool nothingFoundGoOn = true;
+        int tries = 0;
+
+        while (nothingFoundGoOn && tries < 10) {
+            https.begin(String(BaseUrl) + "/time_entries?startDate=" + startDateStr, root_ca);
+            https.addHeader("Authorization", AuthorizationKey);
+
+            int httpCode = https.GET();
+
+            if (httpCode >= 200 && httpCode <= 226) {
+                StaticJsonDocument<512> doc;
+                deserializeJson(doc, https.getString());
+                JsonArray entriesArray = doc.as<JsonArray>();
+                if (entriesArray.size() > 0) {
+                    nothingFoundGoOn = false;
+
+                    entryId = entriesArray[entriesArray.size() - 1]["id"].as<String>();
+                    Serial.printf("- Found entries since \"%s\" with id \"%s\".\n", startDateStr, entryId);
+                }
+
+                doc.garbageCollect();
+                doc.clear();
+            }
+            https.end();
+            tries++;
+        }
+        return entryId;
+    }
+
     //----------------------------
     // GENERAL
     //----------------------------
-    void setAuth(const char* token) {
+    void init(const char* token) {
         std::stringstream ss;
         ss << token << ":api_token";
         int tokenLengthPlain = strlen(ss.str().c_str());
@@ -245,39 +212,44 @@ class Toggl {
         delete[] AuthorizationKey;
         AuthorizationKey = new char[ss.str().size() + 1];
         strcpy(AuthorizationKey, ss.str().c_str());
+
+        DateTime.setTimeZone(getTimezone().c_str());
+        DateTime.setServer("pool.ntp.org");
+        DateTime.begin();
     }
 
    private:
-    const String getUserData(String Input) {
+    const String getUserData(String key) {
         String payload{};
-        String Output{};
-        int16_t HTTP_Code{};
+        String value;
+        int16_t httpCode{};
 
         HTTPClient https;
         https.begin(String(BaseUrl) + "/me", root_ca);
         https.addHeader("Authorization", AuthorizationKey);
 
-        HTTP_Code = https.GET();
+        httpCode = https.GET();
 
-        if (HTTP_Code >= 200 && HTTP_Code <= 226) {
+        if (httpCode >= 200 && httpCode <= 226) {
             StaticJsonDocument<80> filter;
-            filter["data"][Input] = true;
+            filter["data"][key] = true;
 
             DynamicJsonDocument doc(2 * JSON_OBJECT_SIZE(1) + 60);
             deserializeJson(doc, https.getString(), DeserializationOption::Filter(filter));
 
-            String TMP_Str = doc["data"][Input];
-            Output = TMP_Str;
+            String xy = doc["data"][key];
+            value = xy;
 
             doc.garbageCollect();
+            doc.clear();
             filter.garbageCollect();
-
+            filter.clear();
         } else {
-            Output = ("Error: " + String(HTTP_Code));
+            value = ("Error: " + String(httpCode));
         }
 
         https.end();
-        return Output;
+        return value;
     }
 
     const String getCurrentTimerData(String Input) {
@@ -299,11 +271,9 @@ class Toggl {
 
             deserializeJson(doc, https.getString(), DeserializationOption::Filter(filter));
 
-            const String TMP_Str = doc["data"][Input];
-            Output = TMP_Str;
+            Output = doc["data"][Input].as<String>();
             doc.garbageCollect();
             filter.garbageCollect();
-
         }
 
         else {  // To return the error instead of the data, no idea why the built in espHttpClient "errorToString" only returns blank space when a known error occurs...

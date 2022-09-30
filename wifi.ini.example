@@ -1,6 +1,7 @@
 ; Default env, use for every build
 [env:wifi]
 build_flags = 
+	'-DDEVICE_NAME="toggl_buddy"'
 	'-DSSID_AP_1="ssid_from_AP_1"'
 	'-DPW_AP_1="your_password_for_AP_1"'
 	'-DSSID_AP_2="ssid_from_AP_2"'

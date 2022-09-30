@@ -2,4 +2,8 @@
 [env:toggl]
 build_flags = 
 	'-DTOGGL_TOKEN="place-token-here"'
-	'-DDEVICE_NAME="place-desired-device-name"'
+	-DTOGGL_RESUME_LAST=true
+	'-DTOGGL_DEFAULT_DESCRIPTION="Something"'
+	'-DTOGGL_DEFAULT_TAG=""'
+	-DTOGGL_DEFAULT_PID=0
+	'-DTOGGL_DEFAULT_CREATED_WITH="esp32\;\)"'

@@ -2,6 +2,7 @@
 #define BTN_H
 
 #include <M5Atom.h>
+#include "led.h"
 
 TaskHandle_t ButtonObserver;
 bool wasPressed = false;
@@ -14,6 +15,7 @@ void loopBtn(void* parameter) {
 
         if (M5.Btn.wasPressed()) {
             wasPressed = true;
+            setLed(color::GREEN);
             Serial.println("X Btn was pressed!");
         }
     }

@@ -6,10 +6,11 @@
 #define BLINK_DELAY_IN_MS 500
 
 
-enum color { OFF = 0,
-             RED = 1,
-             BLUE = 2,
-             GREEN = 3 };
+enum color { OFF,
+             RED,
+             BLUE,
+             GREEN,
+             WHITE };
 
 uint8_t
     DisBuff[2 + 5 * 5 * 3];  // Used to store RGB color values.  用来存储RBG色值
@@ -85,6 +86,9 @@ void setLed(color col=color::OFF){
     case color::BLUE:
         R=G=0x00;
         B=0xff;
+        break;
+    case color::WHITE:
+        R=G=B=0xff;
         break;
     
     default:
