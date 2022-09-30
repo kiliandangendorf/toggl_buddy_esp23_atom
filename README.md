@@ -6,7 +6,7 @@
 
 Use a hardware button to toggle Toogl time entries. Showing current state via RBG-LED by talking encrypted to the [Toggl API v8](https://github.com/toggl/toggl_api_docs) with an ESP32.
 
-Most code in this repo comes from [Arduino Toggl API](https://github.com/JoeyStrandnes/Arduino-Toggl-API) (mostly removed Wifi setup, refactored and added some functions).
+Most code in this repo comes from JoeyStrandnes' [Arduino Toggl API](https://github.com/JoeyStrandnes/Arduino-Toggl-API) (mostly removed Wifi setup, refactored and added some functions).
 
 This project is taylored for the [M5Stack ATOM Lite](https://docs.m5stack.com/en/core/atom_lite) ESP32 development board.
 It comes with an RGB-LED and one Button; that's everything we need for using Toggl.
@@ -78,7 +78,7 @@ There are some Toggl-specific defines in `toggl.ini` (as pio-build-flags):
 - Change files `led.h` and `btn.h` according to your needs...
 
 # Links
-- [Toggl](https://toggl.com)
-- [Arduino Toggl API](https://github.com/JoeyStrandnes/Arduino-Toggl-API) most code is from here ;)
-- [MStack ATOM Lite](https://docs.m5stack.com/en/core/atom_lite)
-- [PlatformIO](https://platformio.org):
+- Arduino Toggl API: https://github.com/JoeyStrandnes/Arduino-Toggl-API
+- Toggl Track: https://toggl.com
+- MStack ATOM Lite: https://docs.m5stack.com/en/core/atom_lite
+- PlatformIO: https://platformio.org
