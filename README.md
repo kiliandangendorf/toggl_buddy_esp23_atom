@@ -1,5 +1,9 @@
 # Toggl Buddy on an ESP32 (ATOM Lite)
 
+<p align="center">
+    <img src="img/atom_use.gif" alt="usage"/>
+</p>
+
 Use a hardware button to toggle Toogl time entries. Showing current state via RBG-LED by talking encrypted to the [Toggl API v8](https://github.com/toggl/toggl_api_docs) with an ESP32.
 
 Most code in this repo comes from [Arduino Toggl API](https://github.com/JoeyStrandnes/Arduino-Toggl-API) (mostly removed Wifi setup, refactored and added some functions).
@@ -30,7 +34,8 @@ Using [PlatformIO](https://platformio.org):
     (See meaning of other values [below](#preferences).)
 2. Copy `wifi.ini.example` to `wifi.ini` and set up to four Wifi SSID-password tupels.
     Comment unused lines with a leading `;` .
-3. Connect your ESP and run build and upload in PlatformIO (detailed info [here](https://docs.platformio.org/en/stable/integration/ide/vscode.html#setting-up-the-project)).
+3. Connect your ESP and run build and upload in PlatformIO (use these cute little buttons at the ery bottom <img src="img/pio_btn.png" alt="pio_btn" height="12"/>, detailed info [here](https://docs.platformio.org/en/stable/integration/ide/vscode.html#setting-up-the-project)).
+
 
 If everything went well, terminal should show you following output:
 ```
