@@ -1,32 +1,21 @@
-# Toggl Buddy on an ESP32
+# Toggl Buddy on an ESP32 (ATOM Lite)
 
-Talking encrypted to the [Toggl API v8](https://github.com/toggl/toggl_api_docs) with an ESP32.
+Use a hardware button to toggle Toogl time entries. Showing current state via RBG-LED by talking encrypted to the [Toggl API v8](https://github.com/toggl/toggl_api_docs) with an ESP32.
 
 Most code in this repo comes from [Arduino Toggl API](https://github.com/JoeyStrandnes/Arduino-Toggl-API) (mostly removed Wifi setup, refactored and added some functions).
 
-This project is taylored for the [MStack ATOM Lite](https://docs.m5stack.com/en/core/atom_lite) ESP32 development board.
+This project is taylored for the [M5Stack ATOM Lite](https://docs.m5stack.com/en/core/atom_lite) ESP32 development board.
 It comes with an RGB-LED and one Button; that's everything we need for using Toggl.
 At it costs justs about 10€ only ([buy](https://shop.m5stack.com/collections/m5-controllers/products/atom-lite-esp32-development-kit)).
 
-## Usage
-???See Installation belw...
-
-in `toggl.ini` toggle this boolean.
-```
-	-DTOGGL_RESUME_LAST=true
-```
-- `true`: Search for latest task. Restart new task with same description.
-- `false`: Start new task with default values from `toggl.ini`
-
 ## LED Status
 
-- Blue: Booting
-- Red: Toggl timer runs
 - Off: Toggl timer is off
-- Green: Button was pressed
- 
-# Build and Falsh
+- Red: Toggl timer runs
+- Green: Button was pressed (talking to the API)
+- Blue: Booting or HTTP-Error (not connected)
 
+## Usage
 What do you need?
 - [Toggl API token](https://github.com/toggl/toggl_api_docs#api-token). 
     You'll find it in your Toggl account under "My Profile".
@@ -35,12 +24,15 @@ What do you need?
 
 Using [PlatformIO](https://platformio.org):
 1. Copy `toggl.ini.example` to `toggl.ini` and set Toggl token.
-???Explain more from this file
-2. Copy `wifi.ini.example`to `wifi.ini` and set up to four Wifi SSID-password tupels.
-    Comment unused lines with a leading `;` 
+    ```cpp
+    TOGGL_TOKEN="abc...123"`
+    ```
+    (See meaning of other values [below](#preferences).)
+2. Copy `wifi.ini.example` to `wifi.ini` and set up to four Wifi SSID-password tupels.
+    Comment unused lines with a leading `;` .
 3. Connect your ESP and run build and upload in PlatformIO (detailed info [here](https://docs.platformio.org/en/stable/integration/ide/vscode.html#setting-up-the-project)).
 
-If everything went well, terminal should show you following output.
+If everything went well, terminal should show you following output:
 ```
 ################################
 
@@ -62,12 +54,23 @@ Setup done after 11 seconds.
 Remote time switched to: active 
 - Current Timer-ID: xxx 
 ```
+Now have fun toggling ;)
 
-# Another ESP32 board?
+## Preferences
+There are some Toggl-specific defines in `toggl.ini` (as pio-build-flags):
+|Define|Type|Meaning|
+|-|-|-|
+|`TOGGL_RESUME_LAST`|`boolean`|If `true` try to apply description, project id and tags from last time entry. <br/> If `false` always start a new entry with default values below.|
+|`TOGGL_DEFAULT_DESCRIPTION`|`char*`|Description of new time entry.|
+|`TOGGL_DEFAULT_TAG`|`char*`|Tag of new time entry.|
+|`TOGGL_DEFAULT_PID`|`int`|Project ID of new time entry.|
+|`TOGGL_DEFAULT_CREATED_WITH`|`char*`|CreatedWith info of new time entry.|
 
-Than ATOM Lite?
-Use `esp32dev` as `default_envs`  in `platform.ini`.???
-Change files `led.h` and `btn.h` according to your needs.
+
+# Another ESP32 board than ATOM Lite?
+
+- Change the `default_envs`  in `platform.ini` from `m5stack-atom` to `esp32dev`.
+- Change files `led.h` and `btn.h` according to your needs...
 
 # Links
 - [Toggl](https://toggl.com)

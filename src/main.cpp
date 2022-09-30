@@ -85,6 +85,9 @@ void loop() {
         return;
 
     curTimerId= toggl.getCurrentTimerId();
+    if(curTimerId.startsWith("Error:")){
+        setLed(color::BLUE);
+    }
     bool curTimeActive = (curTimerId!="null");
 
     if (timerActive != curTimeActive) {
