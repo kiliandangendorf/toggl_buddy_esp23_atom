@@ -64,6 +64,7 @@ void toggleState() {
                 toggl.resumeTimeEntry(lastTimerId);
             }else{
                 Serial.println("- Timer is currently inactive, but no known id in memory, will start new task.");
+                toggl.startTimeEntry();
                 //TODO: search for latest Timer Id
                 //if found, resume
                 //if not, start new default
