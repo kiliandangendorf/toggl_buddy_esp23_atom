@@ -1,0 +1,5 @@
+; Default env, use for every build
+[env:toggl]
+build_flags = 
+	'-DTOGGL_TOKEN="place-token-here"'
+	'-DDEVICE_NAME="place-desired-device-name"'
